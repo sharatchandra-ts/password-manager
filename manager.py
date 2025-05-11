@@ -1,64 +1,88 @@
 import csv
 import copy
 
-from models.model_pass import password
+from models.model_pass import Password
 import models.model_pass as model_pass
 
-# Name/Location of passwords stored file csv
-file_name = "database/passwords.csv"
+class PasswordManager:
 
-# Stores the field names
-fields = []
+    def __init__(self):    
+        # Name/Location of passwords stored file csv
+        self.file_name = "database/passwords.csv"
 
-# Stores the data
-all_passwords = []
+        # Stores the field names
+        self.fields = []
 
-# Stores all data
-all_data = []
+        # Stores the data
+        self.all_passwords = []
 
-# Loads all the passwords from the csv file
-with open(file_name, 'r') as file:
-    reader = csv.reader(file)
+        # Stores all data
+        self.all_data = []
 
-    # Stores all data
-    all_data = list(reader)
+        self.length = 0
 
-    # Returns the first row which in this case is the field names
-    fields = all_data[0]
+        # Loads all the passwords from the csv file
+        with open(self.file_name, 'r') as file:
+            reader = csv.reader(file)
 
-    # Adds all the passwords to the list
-    for row in all_data[1:]:
-        # Invokes menthod from model_pass for ease
-        all_passwords.append(model_pass.convert_list_to_pwd(row))
+            # Stores all data
+            all_data = list(reader)
+
+            # Returns the first row which in this case is the field names
+            fields = all_data[0]
+
+            # Adds all the passwords to the list
+            for row in all_data[1:]:
+                # Invokes menthod from model_pass for ease
+                self.all_passwords.append(model_pass.convert_list_to_pwd(row))
+
+            self.length = len(self.all_passwords)
 
 
-# Returns the list of all passwords stored
-def get_all_passwords():
-    return all_passwords
+    # Returns the list of all passwords stored
+    def get_all_passwords(self):
+        return self.all_passwords
 
-# Function to add a new password to the database
-def add_password(pwd):
-    with open(file_name, 'a', newline='') as file:
-        writer = csv.writer(file)
-        pwd.id = len(all_passwords)
-        # Appends a new row in the csv with the new password
-        writer.writerow(model_pass.convert_pwd_to_list(pwd))
+    # Function to add a new password to the database
+    def add_password(self, pwd):
+        with open(self.file_name, 'a', newline='') as file:
+            writer = csv.writer(file)
+            pwd.id = self.length
+            # Appends a new row in the csv with the new password
+            writer.writerow(model_pass.convert_pwd_to_list(pwd))
+            self.length += 1
 
-# Function to delete a password
-def delete_password(id):
-    with open(file_name, 'w', newline='') as file:
-        writer = csv.writer(file)
+    # Function to update password
+    def update_password(self, pwd):
+        with open(self.file_name, 'w', newline='') as file:
+            writer = csv.writer(file)
 
-        # Ensures a deep copu of all data list so, when data is modified, all data dosent change
-        data = copy.deepcopy(all_data)
-        
-        # Trys to delete the item. If failure, throws an exception
-        try:
-            data.pop(id)
-        except IndexError:
-            print(IndexError)
-        else:
-            for i in range(id, len(data)):
-                data[i][0] = str(int(data[i][0]) - 1)
-        
-        writer.writerows(data)
+            # Ensures a deep copu of all data list so, when data is modified, all data dosent change
+            data = copy.deepcopy(self.all_data)
+            
+            # Trys to delete the item. If failure, throws an exception
+            try:
+                data[pwd.id] = model_pass.convert_pwd_to_list(pwd)
+            except IndexError:
+                print(IndexError)
+            
+            writer.writerows(data)
+
+    # Function to delete a password
+    def delete_password(self, id):
+        with open(self.file_name, 'w', newline='') as file:
+            writer = csv.writer(file)
+
+            # Ensures a deep copu of all data list so, when data is modified, all data dosent change
+            data = copy.deepcopy(self.all_data)
+            
+            # Trys to delete the item. If failure, throws an exception
+            try:
+                data.pop(id)
+            except IndexError:
+                print(IndexError)
+            else:
+                for i in range(id, len(data)):
+                    data[i][0] = str(int(data[i][0]) - 1)
+            
+            writer.writerows(data)
