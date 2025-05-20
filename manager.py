@@ -3,12 +3,20 @@ import copy
 
 from models.model_pass import Password
 import models.model_pass as model_pass
+from encrypt import Encode
 
 class PasswordManager:
     
     def __init__(self):    
         # Name/Location of passwords stored file csv
         self.file_name = "database/passwords.csv"
+
+        self.encode = Encode()
+
+
+
+
+
 
         # Loads all the passwords from the csv file
         self.load_data()
@@ -26,8 +34,6 @@ class PasswordManager:
         # Stores all data
         self.all_data = []
 
-        self.length = 0
-
         with open(self.file_name, 'r') as file:
             reader = csv.reader(file)
             # Stores all data
@@ -39,9 +45,8 @@ class PasswordManager:
             # Adds all the passwords to the list
             for row in self.all_data[1:]:
                 # Invokes menthod from model_pass for ease
+                row[3] = self.encode.decrypt(row[3])
                 self.all_passwords.append(model_pass.convert_list_to_pwd(row))
-
-            self.length = len(self.all_passwords)
 
         return self.all_passwords
 
@@ -49,7 +54,8 @@ class PasswordManager:
     def add_password(self, pwd):
         with open(self.file_name, 'a', newline='') as file:
             writer = csv.writer(file)
-            pwd.id = self.length
+            pwd.id = len(self.all_passwords)
+            pwd.password = self.encode.encrypt(pwd.password)
             # Appends a new row in the csv with the new password
             writer.writerow(model_pass.convert_pwd_to_list(pwd))
 

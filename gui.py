@@ -6,8 +6,8 @@ from models.model_pass import Password
 class PasswordManagerApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("My App")
-        self.passwordManager = PasswordManager()
+        self.root.title("Password Manager")
+        self.password_manager = PasswordManager()
 
         # Variables
         self.website_var = tkinter.StringVar()
@@ -15,41 +15,45 @@ class PasswordManagerApp:
         self.password_var = tkinter.StringVar()
         self.checkbox_var = tkinter.IntVar()
 
+        self.show_all_passwords = False
+        self.show_selected_password = False
+        self.last_selected_item = None
+
         # Build UI
         self.build_add_frame()
         self.build_table_frame()
         self.build_options_frame()
 
         # Load data
-        self.all_passwords = self.passwordManager.load_data()
+        self.all_passwords = self.password_manager.load_data()
+        self.original_passwords = [pwd.password for pwd in self.all_passwords]
+
         self.refresh_tree()
 
     def refresh_tree(self):
-        # Clear current table rows
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        # Reload passwords
-        updated_passwords = self.passwordManager.load_data()
+        updated_passwords = self.password_manager.load_data()
+        self.original_passwords = [pwd.password for pwd in updated_passwords]
 
-        # Reinsert rows
         for password in updated_passwords:
-            self.tree.insert("", "end", values=(password.id, password.org, password.username, password.password))
+            masked = '•' * len(password.password)
+            pwd_to_show = password.password if self.show_all_passwords else masked
+            self.tree.insert("", "end", values=(password.id, password.org, password.username, pwd_to_show))
 
-    # Handles the show password function
-    def checkboxCommand(self):
+    def toggle_password_entry_visibility(self):
         if self.checkbox_var.get():
             self.pwd_entry.config(show='')
         else:
-            self.pwd_entry.config(show='*')
+            self.pwd_entry.config(show='•')
 
-    # Handles the action to be taken when the button is clicked
-    def funBtnAdd(self):
+    def add_entry(self):
         pwd = Password(id=None, org=self.website_var.get(), username=self.username_var.get(), password=self.password_var.get())
-        self.passwordManager.add_password(pwd=pwd)
+        self.password_manager.add_password(pwd=pwd)
         self.refresh_tree()
 
-    def funBtnDelete(self):
+    def delete_selected_entries(self):
         selected_items = self.tree.selection()
         ids_to_delete = []
 
@@ -58,24 +62,82 @@ class PasswordManagerApp:
             ids_to_delete.append(int(item_values[0]))
 
         for id in sorted(ids_to_delete, reverse=True):
-            self.passwordManager.delete_password(id)
+            self.password_manager.delete_password(id)
 
         self.refresh_tree()
 
-    def funBtnUpdate(self):
+    def update_selected_entry(self):
         pass
 
-    def onSelect(self, event):
-        selected_items = event.widget.selection()
-        if len(selected_items) == 1:
-            self.btn_delete.state(['!disabled'])
-            self.btn_update.state(['!disabled'])
-        elif len(selected_items) >= 1:
-            self.btn_update.state(['disabled'])
-            self.btn_delete.state(['!disabled'])
+    def toggle_selected_password(self):
+        selected_items = self.tree.selection()
+        if not selected_items:
+            return
+
+        selected_item = selected_items[0]
+        self.show_selected_password = not self.show_selected_password
+        value = list(self.tree.item(selected_item, 'values'))
+        i = list(self.tree.get_children()).index(selected_item)
+
+        if self.show_selected_password:
+            self.btn_show_password.config(text='Hide Password')
+            value[3] = self.original_passwords[i]
         else:
+            self.btn_show_password.config(text='Show Password')
+            value[3] = '•' * len(self.original_passwords[i])
+
+        self.tree.item(selected_item, values=value)
+
+
+    def toggle_all_passwords(self):
+        self.show_all_passwords = not self.show_all_passwords
+        for i, item_id in enumerate(self.tree.get_children()):
+            values = list(self.tree.item(item_id, 'values'))
+
+            if self.show_all_passwords:
+                self.btn_toggle_all_passwords.config(text='Hide All Passwords')
+                values[3] = self.original_passwords[i]
+            else:
+                self.btn_toggle_all_passwords.config(text='Show All Passwords')
+                values[3] = '•' * len(self.original_passwords[i])
+
+            self.tree.item(item_id, values=values)
+
+    # TODO Fix the selection issue
+    def handle_selection(self, event):
+        selected_items = event.widget.selection()
+
+        if selected_items:
+            current_item = selected_items[0]
+
+            # If same item clicked again — deselect
+            if self.last_selected_item == current_item:
+                self.tree.selection_remove(current_item)
+                self.last_selected_item = None
+                self.btn_delete.state(['disabled'])
+                self.btn_update.state(['disabled'])
+                self.btn_show_password.state(['disabled'])
+
+            # One new item selected
+            elif len(selected_items) == 1:
+                self.last_selected_item = current_item
+                self.btn_delete.state(['!disabled'])
+                self.btn_update.state(['!disabled'])
+                self.btn_show_password.state(['!disabled'])
+
+            # Multiple items selected
+            else:
+                self.last_selected_item = current_item
+                self.btn_delete.state(['!disabled'])
+                self.btn_update.state(['disabled'])
+                self.btn_show_password.state(['disabled'])
+
+        else:
+            self.last_selected_item = None
             self.btn_delete.state(['disabled'])
             self.btn_update.state(['disabled'])
+            self.btn_show_password.state(['disabled'])
+
 
     def check_inputs(self, *_):
         if self.website_var.get().strip() != "" and self.username_var.get().strip() != "" and len(self.password_var.get().strip()) >= 8:
@@ -85,24 +147,21 @@ class PasswordManagerApp:
 
     def build_add_frame(self):
         frame_add = ttk.Frame(self.root)
-        frame_add.grid(pady=50, padx=25, column=0, row=0)
+        frame_add.grid(pady=(100, 50), padx=25, column=0, row=0)
 
-        # Text field for website name entry
-        ttk.Label(frame_add, text="Enter website name: ").grid(row=1, column=0)
+        ttk.Label(frame_add, text="Website:").grid(row=1, column=0)
         ttk.Entry(frame_add, textvariable=self.website_var).grid(row=1, column=1)
 
-        # Text field for username entry
-        ttk.Label(frame_add, text="Enter username: ").grid(row=2, column=0)
+        ttk.Label(frame_add, text="Username:").grid(row=2, column=0)
         ttk.Entry(frame_add, textvariable=self.username_var).grid(row=2, column=1)
 
-        # Text field for password entry
-        ttk.Label(frame_add, text="Enter website password: ").grid(row=3, column=0)
-        self.pwd_entry = ttk.Entry(frame_add, show='*', textvariable=self.password_var)
+        ttk.Label(frame_add, text="Password:").grid(row=3, column=0)
+        self.pwd_entry = ttk.Entry(frame_add, show='•', textvariable=self.password_var)
         self.pwd_entry.grid(row=3, column=1)
 
-        ttk.Checkbutton(frame_add, text="Show password", variable=self.checkbox_var, command=self.checkboxCommand).grid(row=4, column=1)
+        ttk.Checkbutton(frame_add, text="Show password", variable=self.checkbox_var, command=self.toggle_password_entry_visibility).grid(row=4, column=1)
 
-        self.btn_add = ttk.Button(frame_add, text='Add Entry', command=self.funBtnAdd)
+        self.btn_add = ttk.Button(frame_add, text='Add Entry', command=self.add_entry)
         self.btn_add.grid(row=5, column=1)
         self.btn_add.state(['disabled'])
 
@@ -114,35 +173,35 @@ class PasswordManagerApp:
         frame_display = ttk.Frame(self.root)
         frame_display.grid(pady=15, padx=25, column=1, row=0)
 
-        # This is the table to show the list of passwords
-        self.tree = ttk.Treeview(frame_display, columns=('i', 'o', 'u', 'p'), show="headings")
+        self.tree = ttk.Treeview(frame_display, columns=('ID', 'Website', 'Username', 'Password'), show="headings")
 
-        self.tree.heading("i", text="ID")
-        self.tree.heading("o", text="Organization")
-        self.tree.heading("u", text="Username")
-        self.tree.heading("p", text="Password")
-        self.tree.column("i", width=50)
-        self.tree.column("o", width=100)
-        self.tree.column("u", width=100)
-        self.tree.column("p", width=100)
+        for name in ('ID', 'Website', 'Username', 'Password'):
+            self.tree.heading(name, text=name)
+            self.tree.column(name, width=100)
 
-        self.tree.bind("<<TreeviewSelect>>", self.onSelect)  # Bind select event
-
+        self.tree.bind("<<TreeviewSelect>>", self.handle_selection)
         self.tree.grid(row=0, column=0)
 
     def build_options_frame(self):
         frame_edit = ttk.Frame(self.root)
-        frame_edit.grid(pady=15, padx=0, column=1, row=1)
+        frame_edit.grid(pady=(0,20), padx=0, column=1, row=1)
 
-        self.btn_delete = ttk.Button(frame_edit, text='Delete', command=self.funBtnDelete)
+        self.btn_delete = ttk.Button(frame_edit, text='Delete', command=self.delete_selected_entries)
         self.btn_delete.grid(row=0, column=0)
         self.btn_delete.state(['disabled'])
 
-        self.btn_update = ttk.Button(frame_edit, text='Update', command=self.funBtnUpdate)
+        self.btn_update = ttk.Button(frame_edit, text='Update', command=self.update_selected_entry)
         self.btn_update.grid(row=0, column=1)
         self.btn_update.state(['disabled'])
 
+        self.btn_show_password = ttk.Button(frame_edit, text='Show Password', command=self.toggle_selected_password)
+        self.btn_show_password.grid(row=0, column=3)
+        self.btn_show_password.state(['disabled'])
+
+        self.btn_toggle_all_passwords = ttk.Button(frame_edit, text='Show All Passwords', command=self.toggle_all_passwords)
+        self.btn_toggle_all_passwords.grid(row=0, column=4)
+
 if __name__ == "__main__":
     root = tkinter.Tk()
-    passwordManagerApp = PasswordManagerApp(root)
+    app = PasswordManagerApp(root)
     root.mainloop()
