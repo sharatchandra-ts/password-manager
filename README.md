@@ -77,6 +77,15 @@ A simple, secure, and user-friendly password manager built with Python and Tkint
 
 ---
 
+## 📸 Screenshots
+
+   ![Screenshots](assets/images/ss1.png)
+   ![Screenshots](assets/images/ss2.png)
+   ![Screenshots](assets/images/ss3.png)
+   ![Screenshots](assets/images/ss4.png)
+
+---
+
 ## 🧪 Usage
 
 ### Adding a Password
