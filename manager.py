@@ -45,8 +45,9 @@ class PasswordManager:
             # Adds all the passwords to the list
             for row in self.all_data[1:]:
                 # Invokes menthod from model_pass for ease
-                row[3] = self.encode.decrypt(row[3])
-                self.all_passwords.append(model_pass.convert_list_to_pwd(row))
+                decrypted_row = row.copy()
+                decrypted_row[3] = self.encode.decrypt(row[3])
+                self.all_passwords.append(model_pass.convert_list_to_pwd(decrypted_row))
 
         return self.all_passwords
 
@@ -61,19 +62,28 @@ class PasswordManager:
 
     # Function to update password
     def update_password(self, pwd):
+        # Create deep copy to avoid changing the original in memory
+        data = copy.deepcopy(self.all_data)
+
+        # Convert password to encrypted list format
+        updated_pwd = copy.deepcopy(pwd)
+        updated_pwd.password = self.encode.encrypt(updated_pwd.password)
+        updated_row = model_pass.convert_pwd_to_list(updated_pwd)
+
+        try:
+            data[int(pwd.id) + 1] = updated_row  # +1 because data includes header at index 0
+        except IndexError:
+            print("IndexError: Invalid password ID")
+            return
+
+        # Write updated data to file
         with open(self.file_name, 'w', newline='') as file:
             writer = csv.writer(file)
-
-            # Ensures a deep copu of all data list so, when data is modified, all data dosent change
-            data = copy.deepcopy(self.all_data)
-            
-            # Trys to delete the item. If failure, throws an exception
-            try:
-                data[pwd.id] = model_pass.convert_pwd_to_list(pwd)
-            except IndexError:
-                print(IndexError)
-            
             writer.writerows(data)
+
+        # Update internal memory (optional but good for consistency)
+        self.load_data()
+
 
     # Function to delete a password
     def delete_password(self, id):

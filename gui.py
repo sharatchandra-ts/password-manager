@@ -1,7 +1,9 @@
 import tkinter
 from tkinter import ttk
+import tkinter.simpledialog
 from manager import PasswordManager
 from models.model_pass import Password
+from models.model_update_widget import UpdatePasswordDialog
 
 class PasswordManagerApp:
     def __init__(self, root):
@@ -42,6 +44,8 @@ class PasswordManagerApp:
             pwd_to_show = password.password if self.show_all_passwords else masked
             self.tree.insert("", "end", values=(password.id, password.org, password.username, pwd_to_show))
 
+        self.all_passwords = updated_passwords
+
     def toggle_password_entry_visibility(self):
         if self.checkbox_var.get():
             self.pwd_entry.config(show='')
@@ -67,7 +71,18 @@ class PasswordManagerApp:
         self.refresh_tree()
 
     def update_selected_entry(self):
-        pass
+        
+        current_item = self.selected_items[0]
+        index = self.tree.index(current_item)
+        current_pwd = self.all_passwords[index]
+        
+        dialog = UpdatePasswordDialog(self.root)
+        if dialog.result:
+            print(dialog.result)
+            current_pwd.password = dialog.result
+            self.password_manager.update_password(current_pwd)
+            self.refresh_tree() 
+
 
     def toggle_selected_password(self):
         selected_items = self.tree.selection()
@@ -105,10 +120,10 @@ class PasswordManagerApp:
 
     # TODO Fix the selection issue
     def handle_selection(self, event):
-        selected_items = event.widget.selection()
+        self.selected_items = event.widget.selection()
 
-        if selected_items:
-            current_item = selected_items[0]
+        if self.selected_items:
+            current_item = self.selected_items[0]
 
             # If same item clicked again — deselect
             if self.last_selected_item == current_item:
@@ -119,7 +134,7 @@ class PasswordManagerApp:
                 self.btn_show_password.state(['disabled'])
 
             # One new item selected
-            elif len(selected_items) == 1:
+            elif len(self.selected_items) == 1:
                 self.last_selected_item = current_item
                 self.btn_delete.state(['!disabled'])
                 self.btn_update.state(['!disabled'])
