@@ -4,6 +4,18 @@ A simple, secure, and user-friendly password manager built with Python and Tkint
 
 ---
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Security](#security)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+
+---
+
 ## 📦 Features
 
 - **Add New Entries**: Store website, username, and password combinations securely.
@@ -98,6 +110,12 @@ Passwords are encrypted before storage in the `passwords.csv` file using a custo
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+
+---
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+
+![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 
 ---
 
