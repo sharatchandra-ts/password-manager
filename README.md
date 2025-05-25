@@ -2,6 +2,8 @@
 
 A simple, secure, and user-friendly password manager built with Python and Tkinter. This application allows you to store, manage, and update your credentials with ease, ensuring your data remains encrypted and protected.
 
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
+
 ---
 
 ## Table of Contents
@@ -110,12 +112,6 @@ Passwords are encrypted before storage in the `passwords.csv` file using a custo
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
-
----
-
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-
-![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 
 ---
 
